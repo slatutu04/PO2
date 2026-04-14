@@ -1,127 +1,136 @@
 /**
- * TEACEHABLE MACHINE BOILERPLATE
- * Este script gerencia a webcam, carrega o modelo TF.js e processa as predições.
+ * QUALISCAN 3000 - Factory Quality Scanner
+ * Integrado com Teachable Machine
  */
 
-// URL DO MODELO: Substitua pelo link fornecido pelo Teachable Machine
-// O link deve terminar com uma barra "/", exemplo: "https://teachablemachine.withgoogle.com/models/ABCD123/""
-const URL_MODELO = ""; // <--- INSIRA SEU LINK AQUI
+const URL_MODELO = ""; // <--- INSIRA SEU LINK DO TM AQUI
 
-let model, webcam, labelContainer, maxPredictions;
-const CONFIDENCE_THRESHOLD = 0.85; // Limite de 85% para disparar a ação
+let model, webcam, maxPredictions;
+let currentLabel = "Vazio";
+const CONFIDENCE_THRESHOLD = 0.85;
+
+// Configurações do Jogo
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+let score = 0;
+let efficiency = 100;
+let totalProcessed = 0;
+let errors = 0;
+
+const items = [];
+let spawnRate = 120; 
+let baseSpeed = 2; // Velocidade inicial
+let stars = 0;
+let frameCount = 0;
+
+// ... (init e predictLoop permanecem iguais)
 
 /**
- * Inicializa a Webcam e carrega o modelo
+ * Loop do Jogo (Gráficos e Logica)
  */
-async function init() {
-    if (!URL_MODELO) {
-        alert("Por favor, insira a URL do seu modelo no arquivo script.js");
-        return;
-    }
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // ATUALIZAÇÃO DA DIFICULDADE:
+    // A cada 100 pontos a velocidade base aumenta
+    // E o tempo de spawn diminui
+    baseSpeed = 2 + (score / 150); 
+    spawnRate = Math.max(40, 120 - (score / 5));
 
-    const startBtn = document.getElementById("start-btn");
-    startBtn.disabled = true;
-    startBtn.innerText = "Carregando...";
+    drawConveyor();
+    updateItems();
+    drawItems();
+    updateStats();
+    checkStars();
 
-    const modelURL = URL_MODELO + "model.json";
-    const metadataURL = URL_MODELO + "metadata.json";
+    frameCount++;
+    if (frameCount % Math.floor(spawnRate) === 0) spawnItem();
 
-    try {
-        // Carrega o modelo e os metadados
-        // tmImage.loadFromFiles() pode ser usado se os arquivos forem locais
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
-
-        // Configuração da webcam
-        const flip = true; // Espelhar a imagem?
-        webcam = new tmImage.Webcam(400, 400, flip); // largura, altura, flip
-        await webcam.setup(); // Solicita acesso à câmera
-        await webcam.play();
-        
-        // Remove overlay de loading
-        document.getElementById("loading").style.opacity = "0";
-        setTimeout(() => document.getElementById("loading").style.display = "none", 500);
-
-        // Adiciona canvas ao DOM
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        
-        document.getElementById("status-text").innerText = "Status: Online";
-        document.getElementById("status-text").style.color = "#4ade80";
-
-        window.requestAnimationFrame(loop);
-    } catch (error) {
-        console.error("Erro ao inicializar:", error);
-        alert("Erro ao acessar a câmera ou carregar o modelo. Verifique se o link está correto e se o site tem permissão de câmera.");
-        startBtn.disabled = false;
-        startBtn.innerText = "Tentar Novamente";
-    }
+    window.requestAnimationFrame(gameLoop);
 }
 
-/**
- * Loop contínuo de atualização da webcam e predição
- */
-async function loop() {
-    webcam.update(); // Atualiza o frame da webcam
-    await predict();
-    window.requestAnimationFrame(loop);
-}
+// ... (drawConveyor e spawnItem permanecem iguais)
 
-/**
- * Realiza as predições e gerencia a lógica de triggers
- */
-async function predict() {
-    // A predição pode receber uma imagem, vídeo ou elemento de canvas
-    const prediction = await model.predict(webcam.canvas);
-    
-    // Encontrar a classe com maior probabilidade
-    let highestPrediction = { className: "", probability: 0 };
-    
-    for (let i = 0; i < maxPredictions; i++) {
-        if (prediction[i].probability > highestPrediction.probability) {
-            highestPrediction = prediction[i];
+function updateItems() {
+    for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.x += baseSpeed; // Usa a velocidade dinâmica
+
+        if (!item.scanned && item.x > SCAN_ZONE_X && item.x < SCAN_ZONE_X + SCAN_ZONE_WIDTH) {
+            if (currentLabel === "Joia") {
+                item.scanned = true;
+                if (item.isGood) {
+                    score += 10;
+                    showFeedback("BOA!", "#4ade80");
+                } else {
+                    takeDamage("REJEITE O RUIM!");
+                }
+            }
+        }
+
+        if (!item.scanned && item.x > SCAN_ZONE_X + SCAN_ZONE_WIDTH) {
+            item.scanned = true;
+            if (item.isGood) {
+                takeDamage("DEIXOU PASSAR BOM!");
+            } else {
+                score += 5;
+            }
+        }
+
+        if (item.x > canvas.width) {
+            items.splice(i, 1);
+            totalProcessed++;
         }
     }
+}
 
-    // Atualiza a UI
-    updateUI(highestPrediction);
-
-    // Lógica de Trigger: Se a confiança for maior que o threshold, executa ação
-    if (highestPrediction.probability >= CONFIDENCE_THRESHOLD) {
-        triggerAction(highestPrediction.className);
+function checkStars() {
+    const starsNeeded = Math.floor(score / 100);
+    if (starsNeeded > stars) {
+        stars = starsNeeded;
+        updateStarsUI();
     }
 }
 
-/**
- * Atualiza os elementos visuais na tela
- */
-function updateUI(topResult) {
-    const labelDiv = document.getElementById("label-container");
-    const bar = document.getElementById("confidence-bar");
-    
-    const probability = (topResult.probability * 100).toFixed(0);
-    
-    labelDiv.innerText = `${topResult.className} (${probability}%)`;
-    bar.style.width = probability + "%";
+function updateStarsUI() {
+    const container = document.getElementById("stars-container");
+    container.innerHTML = "";
+    for (let i = 0; i < stars; i++) {
+        container.innerHTML += '<span class="star-pop">⭐</span>';
+    }
 }
 
-/**
- * Função CUSTOMIZÁVEL para disparar ações baseadas no rótulo detectado
- * @param {string} label - Nome da classe detectada
- */
-function triggerAction(label) {
+function drawItems() {
+    ctx.font = "40px Arial";
+    items.forEach(item => {
+        // Se for ruim, aplicamos um filtro leve
+        if (!item.isGood) {
+            ctx.filter = "grayscale(100%) opacity(0.7)";
+            ctx.fillText("🍎", item.x, item.y);
+            ctx.filter = "none";
+        } else {
+            ctx.fillText("🍏", item.x, item.y);
+        }
+    });
+}
+
+function takeDamage(reason) {
+    errors++;
+    efficiency = Math.max(0, 100 - (errors * 5));
+    showFeedback(reason, "#ef4444");
+}
+
+function showFeedback(text, color) {
+    const statusText = document.getElementById("status-text");
+    statusText.innerText = text;
+    statusText.style.color = color;
+    
     const card = document.getElementById("main-card");
-    
-    // Exemplo de ação: Feedback visual de "pulso" no container
-    card.classList.add("trigger-active");
-    setTimeout(() => card.classList.remove("trigger-active"), 500);
+    card.style.borderColor = color;
+    setTimeout(() => card.style.borderColor = "rgba(255,255,255,0.1)", 300);
+}
 
-    // EXEMPLO DE LÓGICA POR CLASSE:
-    // Se você tiver uma classe chamada "Luz Acesa", pode mudar o fundo do site
-    /*
-    if (label === "Classe_Especifica") {
-        document.body.style.backgroundColor = "#4f46e5";
-    }
-    */
-    
-    console.log(`Ação disparada para: ${label}`);
+function updateStats() {
+    document.getElementById("score").innerText = score;
+    document.getElementById("efficiency").innerText = efficiency;
 }

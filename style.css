@@ -103,6 +103,46 @@ p.subtitle {
     box-shadow: 0 0 10px var(--primary-color);
 }
 
+.game-area {
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 2px solid #334155;
+    position: relative;
+}
+
+.stats-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #4ade80;
+}
+
+#gameCanvas {
+    width: 100%;
+    background: #0f172a;
+    border-radius: 8px;
+    display: block;
+}
+
+#stars-container {
+    font-size: 1.2rem;
+    color: #fbbf24;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.star-pop {
+    display: inline-block;
+    animation: starPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes starPop {
+    0% { transform: scale(0); rotate: -180deg; }
+    100% { transform: scale(1); rotate: 0deg; }
+}
+
 .status-badge {
     display: inline-block;
     padding: 4px 12px;

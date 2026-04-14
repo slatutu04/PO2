@@ -13,8 +13,18 @@
 <body>
 
     <div class="container" id="main-card">
-        <h1>AI Vision System</h1>
-        <p class="subtitle">Reconhecimento de imagem em tempo real via TensorFlow.js</p>
+        <h1>QualiScan 3000</h1>
+        <p class="subtitle">Scanner de Qualidade da Fábrica - IA Edition</p>
+
+        <!-- NOVO: Área do Jogo -->
+        <div class="game-area">
+            <div class="stats-bar">
+                <div class="stat">Pontos: <span id="score">0</span></div>
+                <div id="stars-container"></div>
+                <div class="stat">Eficiência: <span id="efficiency">100</span>%</div>
+            </div>
+            <canvas id="gameCanvas" width="600" height="150"></canvas>
+        </div>
 
         <div id="webcam-container">
             <div class="loading-overlay" id="loading">
