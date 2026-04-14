@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vision | Teachable Machine Boilerplate</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container" id="main-card">
+        <h1>AI Vision System</h1>
+        <p class="subtitle">Reconhecimento de imagem em tempo real via TensorFlow.js</p>
+
+        <div id="webcam-container">
+            <div class="loading-overlay" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; font-size: 0.8rem;">Carregando Modelo...</p>
+            </div>
+            <!-- O Canvas da Webcam será inserido aqui pelo JavaScript -->
+        </div>
+
+        <div class="prediction-box">
+            <div id="label-container">Aguardando câmera...</div>
+            
+            <div class="progress-wrapper">
+                <div id="confidence-bar"></div>
+            </div>
+
+            <div class="status-badge" id="status-text">Status: Offline</div>
+        </div>
+
+        <button id="start-btn" onclick="init()">Iniciar Câmera e IA</button>
+    </div>
+
+    <!-- TensorFlow.js e Teachable Machine Image libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
