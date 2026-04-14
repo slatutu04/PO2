@@ -3,7 +3,7 @@
  * Integrado com Teachable Machine
  */
 
-const URL_MODELO = ""; // <--- INSIRA SEU LINK DO TM AQUI
+const URL_MODELO = "https://teachablemachine.withgoogle.com/models/6F40A-3Td/"; 
 
 let model, webcam, maxPredictions;
 let currentLabel = "Vazio";
@@ -23,7 +23,62 @@ let baseSpeed = 2; // Velocidade inicial
 let stars = 0;
 let frameCount = 0;
 
-// ... (init e predictLoop permanecem iguais)
+const SCAN_ZONE_X = 450;
+const SCAN_ZONE_WIDTH = 80;
+
+/**
+ * Inicialização
+ */
+async function init() {
+    const startBtn = document.getElementById("start-btn");
+    
+    startBtn.disabled = true;
+    startBtn.innerText = "Carregando...";
+
+    try {
+        model = await tmImage.load(URL_MODELO + "model.json", URL_MODELO + "metadata.json");
+        maxPredictions = model.getTotalClasses();
+
+        webcam = new tmImage.Webcam(200, 200, true);
+        await webcam.setup();
+        await webcam.play();
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        startBtn.style.display = "none";
+
+        gameLoop(); // Inicia o motor do jogo
+        predictLoop(); // Inicia o motor da IA
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao iniciar. Certifique-se de usar o Live Server e que o link do modelo está correto!");
+        startBtn.disabled = false;
+        startBtn.innerText = "Tentar Novamente";
+    }
+}
+
+/**
+ * Loop da IA (Motor de Visão)
+ */
+async function predictLoop() {
+    webcam.update();
+    const prediction = await model.predict(webcam.canvas);
+    
+    let highest = { className: "Vazio", probability: 0 };
+    for (let i = 0; i < maxPredictions; i++) {
+        if (prediction[i].probability > highest.probability) {
+            highest = prediction[i];
+        }
+    }
+
+    currentLabel = highest.probability >= CONFIDENCE_THRESHOLD ? highest.className : "Vazio";
+    
+    // Atualiza barra de confiança na UI
+    document.getElementById("label-container").innerText = `IA Vê: ${currentLabel}`;
+    document.getElementById("confidence-bar").style.width = (highest.probability * 100) + "%";
+
+    window.requestAnimationFrame(predictLoop);
+}
 
 /**
  * Loop do Jogo (Gráficos e Logica)
@@ -32,8 +87,6 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // ATUALIZAÇÃO DA DIFICULDADE:
-    // A cada 100 pontos a velocidade base aumenta
-    // E o tempo de spawn diminui
     baseSpeed = 2 + (score / 150); 
     spawnRate = Math.max(40, 120 - (score / 5));
 
@@ -49,12 +102,37 @@ function gameLoop() {
     window.requestAnimationFrame(gameLoop);
 }
 
-// ... (drawConveyor e spawnItem permanecem iguais)
+function drawConveyor() {
+    // Esteira
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(0, 110, canvas.width, 20);
+    
+    // Zona de Escaneamento
+    ctx.strokeStyle = "#4ade80";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(SCAN_ZONE_X, 20, SCAN_ZONE_WIDTH, 110);
+    ctx.fillStyle = "rgba(74, 222, 128, 0.1)";
+    ctx.fillRect(SCAN_ZONE_X, 20, SCAN_ZONE_WIDTH, 110);
+    
+    ctx.fillStyle = "#4ade80";
+    ctx.font = "10px Inter";
+    ctx.fillText("ESCANEIE AQUI", SCAN_ZONE_X + 5, 15);
+}
+
+function spawnItem() {
+    const isGood = Math.random() > 0.4; // 60% de chance de ser item bom
+    items.push({
+        x: -50,
+        y: 80,
+        isGood: isGood,
+        scanned: false
+    });
+}
 
 function updateItems() {
     for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i];
-        item.x += baseSpeed; // Usa a velocidade dinâmica
+        item.x += baseSpeed; 
 
         if (!item.scanned && item.x > SCAN_ZONE_X && item.x < SCAN_ZONE_X + SCAN_ZONE_WIDTH) {
             if (currentLabel === "Joia") {
@@ -103,7 +181,6 @@ function updateStarsUI() {
 function drawItems() {
     ctx.font = "40px Arial";
     items.forEach(item => {
-        // Se for ruim, aplicamos um filtro leve
         if (!item.isGood) {
             ctx.filter = "grayscale(100%) opacity(0.7)";
             ctx.fillText("🍎", item.x, item.y);
@@ -118,6 +195,10 @@ function takeDamage(reason) {
     errors++;
     efficiency = Math.max(0, 100 - (errors * 5));
     showFeedback(reason, "#ef4444");
+    
+    if (efficiency <= 0) {
+        // Opcional: Lógica de Game Over pode vir aqui
+    }
 }
 
 function showFeedback(text, color) {
