@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Vision | Teachable Machine Boilerplate</title>
+    <title>QualiScan 3000</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -27,30 +24,29 @@
         </div>
 
         <div id="webcam-container">
-            <div class="loading-overlay" id="loading">
+            <div class="loading-overlay" id="loading" style="display: none;">
                 <div class="spinner"></div>
-                <p style="margin-top: 1rem; font-size: 0.8rem;">Carregando Modelo...</p>
+                <p style="margin-top: 1rem; font-size: 0.8rem;">Carregando...</p>
             </div>
-            <!-- O Canvas da Webcam será inserido aqui pelo JavaScript -->
         </div>
 
         <div class="prediction-box">
-            <div id="label-container">Aguardando câmera...</div>
-            
+            <div id="label-container">Escolha um modo abaixo:</div>
             <div class="progress-wrapper">
                 <div id="confidence-bar"></div>
             </div>
-
-            <div class="status-badge" id="status-text">Status: Offline</div>
+            <div class="status-badge" id="status-text">Status: Aguardando</div>
         </div>
 
-        <button id="start-btn" onclick="init()">Iniciar Câmera e IA</button>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+            <button id="keyboard-btn" onclick="initKeyboardMode()" style="background: #38bdf8; color: white;">JOGAR COM TECLADO (Espaço)</button>
+            <button id="start-btn" onclick="init()" style="background: #6366f1;">Iniciar com Webcam (IA)</button>
+        </div>
     </div>
 
-    <!-- TensorFlow.js e Teachable Machine Image libraries -->
+    <!-- Bibliotecas -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    
     <script src="script.js"></script>
 </body>
 </html>

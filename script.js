@@ -27,17 +27,17 @@ const SCAN_ZONE_X = 450;
 const SCAN_ZONE_WIDTH = 80;
 
 /**
- * Modo de Teclado (Sem Câmera)
+ * MODO DE TECLADO (SEM CÂMERA)
  */
 function initKeyboardMode() {
+    console.log("Iniciando Modo Teclado...");
     document.getElementById("loading").style.display = "none";
-    document.getElementById("start-btn").style.display = "none";
-    document.getElementById("keyboard-btn").style.display = "none";
+    document.getElementById("start-btn").parentElement.style.display = "none";
     
-    document.getElementById("status-text").innerText = "Modo: Teclado (ESPAÇO)";
+    document.getElementById("status-text").innerText = "MODO TECLADO: USE ESPAÇO";
     document.getElementById("status-text").style.color = "#38bdf8";
 
-    // Listener para o Teclado
+    // Listeners
     window.addEventListener("keydown", (e) => {
         if (e.code === "Space") {
             currentLabel = "Joia";
@@ -56,67 +56,58 @@ function initKeyboardMode() {
 }
 
 /**
- * Inicialização com Webcam
+ * INICIALIZAÇÃO COM IA (WEBCAM)
  */
 async function init() {
-    document.getElementById("keyboard-btn").style.display = "none";
     const startBtn = document.getElementById("start-btn");
+    const keyboardBtn = document.getElementById("keyboard-btn");
     
     startBtn.disabled = true;
-    startBtn.innerText = "Carregando...";
+    keyboardBtn.disabled = true;
+    startBtn.innerText = "Carregando Modelo...";
+    document.getElementById("loading").style.display = "flex";
 
     try {
         model = await tmImage.load(URL_MODELO + "model.json", URL_MODELO + "metadata.json");
         maxPredictions = model.getTotalClasses();
 
+        startBtn.innerText = "Configurando Câmera...";
         webcam = new tmImage.Webcam(200, 200, true);
         await webcam.setup();
         await webcam.play();
 
         document.getElementById("loading").style.display = "none";
         document.getElementById("webcam-container").appendChild(webcam.canvas);
-        startBtn.style.display = "none";
+        startBtn.parentElement.style.display = "none";
 
-        gameLoop(); // Inicia o motor do jogo
-        predictLoop(); // Inicia o motor da IA
+        gameLoop(); 
+        predictLoop(); 
     } catch (e) {
         console.error(e);
-        alert("Erro ao iniciar. Certifique-se de usar o Live Server e que o link do modelo está correto!");
+        alert("Erro na IA: Certifique-se de usar Live Server e permitir a câmera.");
         startBtn.disabled = false;
-        startBtn.innerText = "Tentar Novamente";
+        keyboardBtn.disabled = false;
+        startBtn.innerText = "Tentar com Webcam";
     }
 }
 
-/**
- * Loop da IA (Motor de Visão)
- */
 async function predictLoop() {
     webcam.update();
     const prediction = await model.predict(webcam.canvas);
-    
     let highest = { className: "Vazio", probability: 0 };
     for (let i = 0; i < maxPredictions; i++) {
         if (prediction[i].probability > highest.probability) {
             highest = prediction[i];
         }
     }
-
     currentLabel = highest.probability >= CONFIDENCE_THRESHOLD ? highest.className : "Vazio";
-    
-    // Atualiza barra de confiança na UI
     document.getElementById("label-container").innerText = `IA Vê: ${currentLabel}`;
     document.getElementById("confidence-bar").style.width = (highest.probability * 100) + "%";
-
     window.requestAnimationFrame(predictLoop);
 }
 
-/**
- * Loop do Jogo (Gráficos e Logica)
- */
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // ATUALIZAÇÃO DA DIFICULDADE:
     baseSpeed = 2 + (score / 150); 
     spawnRate = Math.max(40, 120 - (score / 5));
 
@@ -133,30 +124,18 @@ function gameLoop() {
 }
 
 function drawConveyor() {
-    // Esteira
     ctx.fillStyle = "#334155";
     ctx.fillRect(0, 110, canvas.width, 20);
-    
-    // Zona de Escaneamento
     ctx.strokeStyle = "#4ade80";
     ctx.lineWidth = 3;
     ctx.strokeRect(SCAN_ZONE_X, 20, SCAN_ZONE_WIDTH, 110);
     ctx.fillStyle = "rgba(74, 222, 128, 0.1)";
     ctx.fillRect(SCAN_ZONE_X, 20, SCAN_ZONE_WIDTH, 110);
-    
-    ctx.fillStyle = "#4ade80";
-    ctx.font = "10px Inter";
-    ctx.fillText("ESCANEIE AQUI", SCAN_ZONE_X + 5, 15);
 }
 
 function spawnItem() {
-    const isGood = Math.random() > 0.4; // 60% de chance de ser item bom
-    items.push({
-        x: -50,
-        y: 80,
-        isGood: isGood,
-        scanned: false
-    });
+    const isGood = Math.random() > 0.4;
+    items.push({ x: -50, y: 80, isGood: isGood, scanned: false });
 }
 
 function updateItems() {
@@ -184,11 +163,7 @@ function updateItems() {
                 score += 5;
             }
         }
-
-        if (item.x > canvas.width) {
-            items.splice(i, 1);
-            totalProcessed++;
-        }
+        if (item.x > canvas.width) items.splice(i, 1);
     }
 }
 
@@ -222,23 +197,15 @@ function drawItems() {
 }
 
 function takeDamage(reason) {
-    errors++;
-    efficiency = Math.max(0, 100 - (errors * 5));
+    efficiency = Math.max(0, efficiency - 5);
     showFeedback(reason, "#ef4444");
-    
-    if (efficiency <= 0) {
-        // Opcional: Lógica de Game Over pode vir aqui
-    }
 }
 
 function showFeedback(text, color) {
-    const statusText = document.getElementById("status-text");
-    statusText.innerText = text;
-    statusText.style.color = color;
-    
-    const card = document.getElementById("main-card");
-    card.style.borderColor = color;
-    setTimeout(() => card.style.borderColor = "rgba(255,255,255,0.1)", 300);
+    document.getElementById("status-text").innerText = text;
+    document.getElementById("status-text").style.color = color;
+    document.getElementById("main-card").style.borderColor = color;
+    setTimeout(() => document.getElementById("main-card").style.borderColor = "rgba(255,255,255,0.1)", 300);
 }
 
 function updateStats() {
