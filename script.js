@@ -27,9 +27,39 @@ const SCAN_ZONE_X = 450;
 const SCAN_ZONE_WIDTH = 80;
 
 /**
- * Inicialização
+ * Modo de Teclado (Sem Câmera)
+ */
+function initKeyboardMode() {
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("start-btn").style.display = "none";
+    document.getElementById("keyboard-btn").style.display = "none";
+    
+    document.getElementById("status-text").innerText = "Modo: Teclado (ESPAÇO)";
+    document.getElementById("status-text").style.color = "#38bdf8";
+
+    // Listener para o Teclado
+    window.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+            currentLabel = "Joia";
+            document.getElementById("confidence-bar").style.width = "100%";
+        }
+    });
+
+    window.addEventListener("keyup", (e) => {
+        if (e.code === "Space") {
+            currentLabel = "Vazio";
+            document.getElementById("confidence-bar").style.width = "0%";
+        }
+    });
+
+    gameLoop();
+}
+
+/**
+ * Inicialização com Webcam
  */
 async function init() {
+    document.getElementById("keyboard-btn").style.display = "none";
     const startBtn = document.getElementById("start-btn");
     
     startBtn.disabled = true;
